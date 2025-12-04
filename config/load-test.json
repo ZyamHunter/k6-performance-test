@@ -1,0 +1,31 @@
+{
+  "scenarios": {
+    "load_test": {
+      "executor": "ramping-vus",
+      "stages": [
+        { "duration": "2m", "target": 10 },
+        { "duration": "5m", "target": 50 },
+        { "duration": "10m", "target": 100 },
+        { "duration": "5m", "target": 100 },
+        { "duration": "3m", "target": 0 }
+      ],
+      "gracefulRampDown": "2m"
+    }
+  },
+  "thresholds": {
+    "http_req_duration": ["p(90)<2000", "p(95)<3000"],
+    "http_req_failed": ["rate<0.05"],
+    "purchase_success": ["rate>0.95"],
+    "errors": ["rate<0.05"],
+    "http_reqs": ["rate>240"]
+  },
+  "summaryTrendStats": ["avg", "min", "med", "max", "p(90)", "p(95)", "p(99)", "p(99.99)"],
+  "noConnectionReuse": false,
+  "userAgent": "K6-BlazeDemoTest/1.0",
+  "ext": {
+    "loadimpact": {
+      "name": "BlazDemo - Load Test (250 RPS Target)",
+      "note": "Teste de carga para validar 250 RPS com p90 < 2s"
+    }
+  }
+}
