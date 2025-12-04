@@ -2,16 +2,14 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate } from 'k6/metrics';
 
-// Métricas customizadas
 export let errorRate = new Rate('errors');
 export let purchaseSuccessRate = new Rate('purchase_success');
 
 export const options = {
-  // As opções serão carregadas dos arquivos de configuração JSON
   thresholds: {
-    http_req_duration: ['p(90)<2000'], // 90th percentil deve ser menor que 2 segundos
-    http_req_failed: ['rate<0.05'], // Taxa de erro menor que 5%
-    purchase_success: ['rate>0.95'], // Taxa de sucesso na compra maior que 95%
+    http_req_duration: ['p(90)<2000'],
+    http_req_failed: ['rate<0.05'],
+    purchase_success: ['rate>0.95'],
     errors: ['rate<0.05']
   },
   ext: {
@@ -21,7 +19,6 @@ export const options = {
   }
 };
 
-// Configuração de think time otimizada
 const THINK_TIME = {
   load: parseFloat(__ENV.THINK_TIME_LOAD) || 0.2,    // 200ms para load test
   spike: parseFloat(__ENV.THINK_TIME_SPIKE) || 0.5,   // 500ms para spike test
