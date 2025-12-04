@@ -1,0 +1,46 @@
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "fix/**"
+      - "release/**"
+    paths-ignore:
+      - "**/*.md"
+      - .scafflater/**
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - .scafflater/**
+  workflow_dispatch:
+
+name: Standard
+
+env:
+  app_name: "testes"
+  aws_region: "us-east-1"
+  dockerfilePath: "dockerfiles/Dockerfile"
+  namespace: "codeceptjs-playwright-ai"
+  value_stream: "codeceptjs-playwright-ai"
+
+jobs:
+  ci_performance:
+    name: CI - Perform Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v3
+      - name: ⚙️ Default Steps
+        uses: ./.github/actions/setup-composite
+      - name: 🧪 Run Performance tests
+        run: |
+          npx codeceptjs run --debug
+        continue-on-error: true
+      - name: ⬆️ Upload Performance Test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance
