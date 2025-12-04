@@ -37,7 +37,7 @@ jobs:
         uses: ./.github/actions/setup-composite
       - name: 🧪 Run Performance tests
         run: |
-          npx codeceptjs run --debug
+          npm run test
         continue-on-error: true
       - name: ⬆️ Upload Performance Test results
         uses: actions/upload-artifact@v4
