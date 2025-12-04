@@ -8,6 +8,10 @@
     "test:spike": "k6 run --config config/spike-test.json src/main.js",
     "test:load-report": "k6 run --config config/load-test.json --out html=reports/load-test-report.html src/main.js",
     "test:spike-report": "k6 run --config config/spike-test.json --out html=reports/spike-test-report.html src/main.js",
+    "test:load-optimized": "k6 run --config config/load-test.json --env TEST_TYPE=load --env THINK_TIME_LOAD=0.2 src/main.js",
+    "test:spike-optimized": "k6 run --config config/spike-test.json --env TEST_TYPE=spike --env THINK_TIME_SPIKE=0.5 src/main.js",
+    "test:quick": "k6 run --vus 50 --duration 2m --env TEST_TYPE=load --env THINK_TIME=0.1 src/main.js",
+    "test:max-rps": "k6 run --vus 200 --duration 5m --env TEST_TYPE=load --env THINK_TIME=0.05 src/main.js",
     "install:k6": "echo 'Por favor, instale o K6: https://k6.io/docs/get-started/installation/'"
   },
   "keywords": [

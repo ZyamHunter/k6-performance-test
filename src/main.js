@@ -16,15 +16,27 @@ export const options = {
   },
   ext: {
     loadimpact: {
-      name: "BlazDemo Performance Test"
+      name: "BlazDemo Performance Test - Optimized"
     }
   }
 };
 
+// Configuração de think time otimizada
+const THINK_TIME = {
+  load: parseFloat(__ENV.THINK_TIME_LOAD) || 0.2,    // 200ms para load test
+  spike: parseFloat(__ENV.THINK_TIME_SPIKE) || 0.5,   // 500ms para spike test
+  default: parseFloat(__ENV.THINK_TIME) || 0.3        // 300ms padrão
+};
+
+// Detectar tipo de teste atual
+const currentTestType = __ENV.TEST_TYPE || 'default';
+const thinkTime = THINK_TIME[currentTestType] || THINK_TIME.default;
+
 export function setup() {
-  console.log('🚀 Iniciando teste de performance BlazDemo');
+  console.log('🚀 Iniciando teste de performance BlazDemo - VERSÃO OTIMIZADA');
   console.log('📋 Objetivo: Simular compra de passagem aérea');
   console.log('🎯 Meta: 250 RPS com p90 < 2s');
+  console.log(`⏱️  Think Time configurado: ${thinkTime}s (Tipo: ${currentTestType})`);
 }
 
 export default function () {
@@ -38,7 +50,8 @@ export default function () {
     'Homepage contains title': (r) => r.body.includes('Welcome to the Simple Travel Agency!')
   }) || errorRate.add(1);
 
-  sleep(1);
+  // Think time otimizado - usuário lendo a página
+  sleep(thinkTime);
 
   // Grupo: Selecionar origem e destino
   response = http.get('https://www.blazedemo.com/', {
@@ -69,7 +82,8 @@ export default function () {
     return; // Para o teste se não conseguir buscar voos
   }
 
-  sleep(1);
+  // Think time otimizado - usuário analisando opções de voos
+  sleep(thinkTime);
 
   // Grupo: Selecionar voo e prosseguir para compra
   // Simular clique no primeiro voo disponível
@@ -91,7 +105,8 @@ export default function () {
     'Purchase form displayed': (r) => r.body.includes('Your flight from TLV to SFO has been reserved')
   }) || errorRate.add(1);
 
-  sleep(1);
+  // Think time otimizado - usuário preenchendo formulário
+  sleep(thinkTime);
 
   // Grupo: Preencher dados de compra e finalizar
   const purchaseData = {
@@ -130,7 +145,8 @@ export default function () {
     console.log('✅ Compra realizada com sucesso');
   }
 
-  sleep(1);
+  // Think time otimizado - usuário visualizando confirmação
+  sleep(thinkTime * 0.5); // Menor tempo na confirmação
 }
 
 export function teardown() {
