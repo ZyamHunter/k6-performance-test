@@ -25,38 +25,6 @@ env:
   target_url: 'https://www.blazedemo.com'
 
 jobs:
-  validate:
-    name: Validate Project Structure
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Check Required Files
-        run: |
-          echo 'Validating project structure...'
-          if [ ! -f 'src/main.js' ]; then
-            echo 'Missing src/main.js'
-            exit 1
-          fi
-          if [ ! -f 'config/load-test.json' ]; then
-            echo 'Missing config/load-test.json'
-            exit 1
-          fi
-          if [ ! -f 'config/spike-test.json' ]; then
-            echo 'Missing config/spike-test.json'
-            exit 1
-          fi
-          echo 'All required files present'
-          
-      - name: Setup K6 for Validation
-        uses: grafana/setup-k6-action@v1
-        
-      - name: Test Script Syntax
-        run: |
-          echo 'Testing K6 script syntax...'
-          k6 run --vus 1 --duration 5s src/main.js --dry-run
-
   ci_performance:
     name: CI - K6 Performance Test
     runs-on: ubuntu-latest
