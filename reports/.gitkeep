@@ -1,0 +1,5 @@
+# Keep this directory in git but ignore reports
+*.html
+*.json
+*.xml
+!.gitkeep
