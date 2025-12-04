@@ -1,0 +1,53 @@
+name: 🚀 Quick Performance Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_vus:
+        description: 'Number of Virtual Users'
+        required: true
+        default: '10'
+        type: string
+      duration:
+        description: 'Test Duration (e.g., 30s, 2m, 5m)'
+        required: true
+        default: '2m'
+        type: string
+
+jobs:
+  quick_test:
+    name: Quick K6 Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup K6
+        uses: grafana/setup-k6-action@v1
+        
+      - name: 🧪 Run Quick Test
+        run: |
+          echo "🚀 Running quick test with ${{ github.event.inputs.target_vus }} VUs for ${{ github.event.inputs.duration }}"
+          k6 run --vus ${{ github.event.inputs.target_vus }} --duration ${{ github.event.inputs.duration }} \
+                 --out json=quick-test-results.json \
+                 src/main.js
+        continue-on-error: true
+        
+      - name: 📊 Show Quick Results
+        if: always()
+        run: |
+          echo "## 🎯 Quick Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **VUs**: ${{ github.event.inputs.target_vus }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration**: ${{ github.event.inputs.duration }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: BlazDemo flight booking" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Test completed** - Check logs for detailed metrics" >> $GITHUB_STEP_SUMMARY
+        
+      - name: ⬆️ Upload Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quick-test-results-${{ github.run_number }}
+          path: quick-test-results.json
+          retention-days: 7

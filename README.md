@@ -60,7 +60,9 @@ sudo apt-get install k6
 
 ## 📋 Como Executar os Testes
 
-### Comandos Básicos
+### Execução Local
+
+#### Comandos Básicos
 
 ```bash
 # Teste de carga (250 RPS target)
@@ -76,7 +78,7 @@ k6 run --config config/load-test.json --out html=reports/load-test-report.html s
 k6 run --config config/spike-test.json --out html=reports/spike-test-report.html src/main.js
 ```
 
-### Usando NPM Scripts
+#### Usando NPM Scripts
 
 ```bash
 # Teste de carga simples
@@ -91,6 +93,28 @@ npm run test:load-report
 # Teste de pico com relatório
 npm run test:spike-report
 ```
+
+### 🤖 Execução via GitHub Actions
+
+#### Workflow Principal (standard.yaml)
+- **Trigger**: Push/PR para main, develop, feature/*, fix/*, release/*
+- **Manual**: Workflow dispatch com seleção de teste (load/spike/both)
+- **Validações**: Estrutura do projeto e sintaxe do script
+- **Outputs**: Relatórios JSON e summary detalhado
+
+#### Workflow Rápido (quick-test.yaml)
+- **Trigger**: Apenas manual (workflow dispatch)
+- **Parâmetros**: Número de VUs e duração customizáveis
+- **Uso**: Testes rápidos e validações
+
+#### Como executar via GitHub:
+1. Acesse a aba **Actions** no GitHub
+2. Selecione o workflow desejado:
+   - **K6 Performance Tests**: Testes completos
+   - **Quick Performance Test**: Teste rápido customizável
+3. Clique em **Run workflow**
+4. Configure os parâmetros (se aplicável)
+5. Aguarde a execução e baixe os artifacts
 
 ## 📊 Resultados dos Testes
 

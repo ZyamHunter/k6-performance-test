@@ -8,39 +8,159 @@ on:
       - "release/**"
     paths-ignore:
       - "**/*.md"
-      - .scafflater/**
   pull_request:
     branches:
       - main
     paths-ignore:
       - "**/*.md"
-      - .scafflater/**
   workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of test to run'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+        - load
+        - spike
+        - both
 
-name: Standard
+name: K6 Performance Tests
 
 env:
-  app_name: "testes"
-  aws_region: "us-east-1"
-  dockerfilePath: "dockerfiles/Dockerfile"
-  namespace: "codeceptjs-playwright-ai"
-  value_stream: "codeceptjs-playwright-ai"
+  app_name: "k6-performance-test"
+  target_url: "https://www.blazedemo.com"
 
 jobs:
-  ci_performance:
-    name: CI - Perform Test
+  validate:
+    name: 🔍 Validate Project Structure
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout
-        uses: actions/checkout@v3
-      - name: ⚙️ Default Steps
-        uses: ./.github/actions/setup-composite
-      - name: 🧪 Run Performance tests
+        uses: actions/checkout@v4
+        
+      - name: 🔍 Check Required Files
         run: |
-          npm run test
+          echo "Validating project structure..."
+          
+          # Check main script exists
+          if [ ! -f "src/main.js" ]; then
+            echo "❌ Missing src/main.js"
+            exit 1
+          fi
+          
+          # Check config files
+          if [ ! -f "config/load-test.json" ]; then
+            echo "❌ Missing config/load-test.json"
+            exit 1
+          fi
+          
+          if [ ! -f "config/spike-test.json" ]; then
+            echo "❌ Missing config/spike-test.json"
+            exit 1
+          fi
+          
+          # Check documentation
+          if [ ! -f "README.md" ]; then
+            echo "❌ Missing README.md"
+            exit 1
+          fi
+          
+          echo "✅ All required files present"
+          
+      - name: 🧪 Validate K6 Script Syntax
+        uses: grafana/setup-k6-action@v1
+        
+      - name: 🧪 Test Script Syntax
+        run: |
+          echo "Testing K6 script syntax..."
+          k6 run --vus 1 --duration 5s --config config/load-test.json src/main.js --dry-run
+          echo "✅ Script syntax validation passed"
+
+  ci_performance:
+    name: CI - K6 Performance Test
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup K6
+        uses: grafana/setup-k6-action@v1
+        
+      - name: 📁 Create Reports Directory
+        run: mkdir -p reports
+        
+      - name: 🧪 Run Load Test
+        if: github.event.inputs.test_type == 'load' || github.event.inputs.test_type == 'both' || github.event.inputs.test_type == ''
+        run: |
+          echo "🚀 Starting Load Test (Target: 250 RPS, p90 < 2s)"
+          k6 run --config config/load-test.json --out json=reports/load-test-results.json src/main.js
         continue-on-error: true
-      - name: ⬆️ Upload Performance Test results
+        
+      - name: ⚡ Run Spike Test
+        if: github.event.inputs.test_type == 'spike' || github.event.inputs.test_type == 'both' || github.event.inputs.test_type == ''
+        run: |
+          echo "⚡ Starting Spike Test (Peak load validation)"
+          k6 run --config config/spike-test.json --out json=reports/spike-test-results.json src/main.js
+        continue-on-error: true
+        
+      - name: 📊 Extract Test Metrics
+        if: always()
+        run: |
+          # Extract key metrics from JSON reports if they exist
+          if [ -f "reports/load-test-results.json" ]; then
+            echo "LOAD_TEST_RPS=$(cat reports/load-test-results.json | tail -1 | jq -r '.metric == "http_reqs" and .type == "Point" | .data.value // 0')" >> $GITHUB_ENV
+            echo "LOAD_TEST_P90=$(cat reports/load-test-results.json | tail -1 | jq -r '.metric == "http_req_duration" and .type == "Point" and .data.tags.expected_response == "true" | .data.value // 0')" >> $GITHUB_ENV
+          fi
+          
+          if [ -f "reports/spike-test-results.json" ]; then
+            echo "SPIKE_TEST_RPS=$(cat reports/spike-test-results.json | tail -1 | jq -r '.metric == "http_reqs" and .type == "Point" | .data.value // 0')" >> $GITHUB_ENV
+          fi
+        
+      - name: ⬆️ Upload Test Results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: performance-report
-          path: performance
+          name: k6-performance-reports-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+          
+      - name: � Generate Test Summary
+        if: always()
+        run: |
+          echo "## 🎯 K6 Performance Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Test Overview" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Site**: https://www.blazedemo.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scenario**: Flight booking complete flow" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏁 Test Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Type | Status | Target | Notes |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "reports/load-test-results.json" ]; then
+            echo "| 🔄 Load Test | ✅ Completed | 250 RPS, p90<2s | Check artifacts for details |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔄 Load Test | ⏭️ Skipped | - | Not selected for this run |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f "reports/spike-test-results.json" ]; then
+            echo "| ⚡ Spike Test | ✅ Completed | Peak validation | Check artifacts for details |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| ⚡ Spike Test | ⏭️ Skipped | - | Not selected for this run |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reports**: Download `k6-performance-reports-${{ github.run_number }}` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- **JSON Data**: Raw K6 metrics for further analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 How to Analyze Results" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download the artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "2. Use K6 HTML reporter or analyze JSON data" >> $GITHUB_STEP_SUMMARY
+          echo "3. Check SLA compliance (p90 < 2000ms)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Performance tests executed with K6 on BlazDemo flight booking scenario*" >> $GITHUB_STEP_SUMMARY
