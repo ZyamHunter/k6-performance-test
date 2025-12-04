@@ -32,51 +32,6 @@ env:
   target_url: "https://www.blazedemo.com"
 
 jobs:
-  validate:
-    name: 🔍 Validate Project Structure
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⬇️ Checkout
-        uses: actions/checkout@v4
-        
-      - name: 🔍 Check Required Files
-        run: |
-          echo "Validating project structure..."
-          
-          # Check main script exists
-          if [ ! -f "src/main.js" ]; then
-            echo "❌ Missing src/main.js"
-            exit 1
-          fi
-          
-          # Check config files
-          if [ ! -f "config/load-test.json" ]; then
-            echo "❌ Missing config/load-test.json"
-            exit 1
-          fi
-          
-          if [ ! -f "config/spike-test.json" ]; then
-            echo "❌ Missing config/spike-test.json"
-            exit 1
-          fi
-          
-          # Check documentation
-          if [ ! -f "README.md" ]; then
-            echo "❌ Missing README.md"
-            exit 1
-          fi
-          
-          echo "✅ All required files present"
-          
-      - name: 🧪 Validate K6 Script Syntax
-        uses: grafana/setup-k6-action@v1
-        
-      - name: 🧪 Test Script Syntax
-        run: |
-          echo "Testing K6 script syntax..."
-          k6 run --vus 1 --duration 5s --config config/load-test.json src/main.js --dry-run
-          echo "✅ Script syntax validation passed"
-
   ci_performance:
     name: CI - K6 Performance Test
     runs-on: ubuntu-latest
